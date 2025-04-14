@@ -1,0 +1,20 @@
+[project]
+name = "rl-comp579"
+version = "0.1.0"
+description = ""
+
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gymnasium (>=1.1.1,<2.0.0)",
+    "numpy (>=2.2.4,<3.0.0)",
+    "ale-py (>=0.10.2,<0.11.0)",
+    "stable-baselines3[extra] (>=2.6.0,<3.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
