@@ -7,14 +7,17 @@ import numpy as np
 import gymnasium as gym
 from ale_py import ALEInterface
 from stable_baselines3 import PPO, DQN, A2C
-from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.env_util import make_vec_env, make_atari_env
 from stable_baselines3.common.vec_env import VecFrameStack
-from stable_baselines3.common.env_util import make_atari_env
 from stable_baselines3.common.atari_wrappers import FireResetEnv, EpisodicLifeEnv
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from callback import TrainingMonitorCallback
+from custom_logger import setup_logging
 
+import logging
+
+setup_logging(log_dir="logs", filename_prefix="train_eval_log")
 
 def timed(func):
     def wrapper(*args, **kwargs):
@@ -23,7 +26,7 @@ def timed(func):
         t_total = time() - t_begin
         hours, rem = divmod(t_total, 3600)
         minutes, seconds = divmod(rem, 60)
-        print(f"Total running time: {int(hours)}:{int(minutes)}:{int(seconds)}")
+        logging.info(f"Total running time: {int(hours)}:{int(minutes)}:{int(seconds)}")
         return result
     return wrapper
 
@@ -159,7 +162,7 @@ def eval_model(
 def main():
     total_configs = len(MODEL_NAMES) * len(FRAMESTACKS) * len(SEEDS)
     total_done = 0
-    print(f"Configurations to run: {total_configs}")
+    logging.info(f"Configurations to run: {total_configs}")
     
     for model_name in MODEL_NAMES:
         for framestack in FRAMESTACKS:
@@ -168,9 +171,9 @@ def main():
                 model_class = PPO if model_name == "PPO" else DQN if model_name == "DQN" else A2C
                 
                 prefix = f"[{total_done + 1}/{total_configs}]"
-                print(f"{prefix} {model_name=} {framestack=} {seed=}")
+                logging.info(f"{prefix} {model_name=} {framestack=} {seed=}")
                 
-                print(f"{prefix} Training...")
+                logging.info(f"{prefix} Training...")
                 model, results = train_model(
                     ENV_NAME,
                     model_name,
@@ -191,7 +194,7 @@ def main():
                 model_path = f"{save_dir}/model"
                 model.save(model_path)
                 
-                print(f"{prefix} Evaluating...")
+                logging.info(f"{prefix} Evaluating...")
                 eval_results = eval_model(
                     ENV_NAME,
                     model_class,
@@ -210,7 +213,7 @@ def main():
                 
                 with open(f"{save_dir}/results.json", "w") as f:
                     json.dump(results, f, indent=4)
-                print(f"{prefix} Saved results to {save_dir}")
+                logging.info(f"{prefix} Saved results to {save_dir}")
                 
                 total_done += 1        
 
@@ -222,7 +225,7 @@ TOTAL_TRAIN_TIMESTEPS = 1_000_000
 TOTAL_EVAL_EPISODES = 250
 LOG_FREQ = 10_000
 SAVE_DIR = "results"
-DQN_BUFFER_SIZE = 100_000 # Reduced from 1_000_000 to avoid out of memory errors
+DQN_BUFFER_SIZE = 50_000 # Reduced from 1_000_000 to avoid out of memory errors
 
 # Combinations
 MODEL_NAMES = ["PPO", "DQN", "A2C"]
@@ -239,5 +242,8 @@ SEEDS = [2042, 2091, 2112, 2205, 2288, 2296, 2473, 2654, 2761, 2987] # For the e
 
 
 if __name__ == "__main__":
-    main()
-
+    try:
+        main()
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        raise e
